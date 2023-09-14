@@ -1,0 +1,6 @@
+CC = CC
+CFLAG = 
+LIB = 
+
+
+

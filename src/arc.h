@@ -11,12 +11,12 @@ typedef void (*arc_callback)(void* ptr);
 
 typedef struct arc {
     atomic_uint32_t     ref;            // remaining references        
-    arc_callback        callback;       // callback for dereference sub classes, do nothing if `NULL`.
-    arc_callback        free;           // callback for deallocating the struct, use `free` if `NULL`.
+    arc_callback        free;           // Callback for deallocating the struct, do nothing if `NULL`.
+    arc_callback        cleanup;        // Callback for dereference sub classes, do nothing if `NULL`.
     pthread_mutex_t     mutex;          // mutex lock
 } arc_t;
 
-arc_t   arc_init(arc_callback callback, arc_callback free);
+arc_t   arc_init(arc_callback cleanup, arc_callback free);
 void    arc_destroy(void* arc);
 void    arc_ref(void* arc);
 void    arc_unref(void* arc);
@@ -30,11 +30,11 @@ void    arc_unlock(void* arc);
 
 #ifdef ARC_IMPLEMENTATION
 
-extern inline arc_t arc_init(arc_callback callback, arc_callback free) {
+extern inline arc_t arc_init(arc_callback free, arc_callback cleanup) {
     arc_t res = {
         .ref        = 1,
-        .callback   = callback,
         .free       = free,
+        .cleanup    = cleanup,
     };
     pthread_mutex_init(&res.mutex, NULL);
     return res;
@@ -55,14 +55,12 @@ extern inline void arc_unref(void* arc) {
     if (atomic_fetch_sub(&arc_temp->ref, 1) == 1) {
         // reference goes to zero, clean up
         pthread_mutex_destroy(&arc_temp->mutex);
-        if (arc_temp->callback != NULL) {
-            arc_temp->callback(arc);
+        if (arc_temp->cleanup != NULL) {
+            arc_temp->cleanup(arc);
         }
-        if (arc_temp->free == NULL) {
-            free(arc);
-            return;
+        if (arc_temp->free != NULL) {
+            arc_temp->free(arc);
         }
-        arc_temp->free(arc);
     }
 }
 

@@ -8,11 +8,11 @@ typedef void (*rc_callback)(void* ptr);
 
 typedef struct rc {
     uint32_t    ref;
-    rc_callback callback;
     rc_callback free;
+    rc_callback cleanup;
 } rc_t;
 
-rc_t    rc_init(rc_callback callback, rc_callback free);
+rc_t    rc_init(rc_callback cleanup, rc_callback free);
 void    rc_destroy(void* rc);
 void    rc_ref(void* rc);
 void    rc_unref(void* rc);
@@ -23,11 +23,11 @@ int     rc_get_ref(void* rc);
 
 #ifdef RC_IMPLEMENTATION
 
-extern inline rc_t rc_init(rc_callback callback, rc_callback free) {
+extern inline rc_t rc_init(rc_callback cleanup, rc_callback free) {
     rc_t res = {
         .ref        = 1,
-        .callback   = callback,
         .free       = free,
+        .cleanup    = cleanup,
     };
     return res;
 }
@@ -44,8 +44,8 @@ extern inline void rc_ref(void* rc) {
 extern inline void rc_unref(void* rc) {
     rc_t* rc_temp = rc;
     if (--rc_temp->ref == 0) {
-        if (rc_temp->callback != NULL) {
-            rc_temp->callback(rc);
+        if (rc_temp->cleanup != NULL) {
+            rc_temp->cleanup(rc);
         }
         if (rc_temp->free == NULL) {
             free(rc);
