@@ -8,8 +8,8 @@ typedef void (*rc_callback)(void* ptr);
 
 typedef struct rc {
     uint32_t    ref;
-    rc_callback free;
-    rc_callback cleanup;
+    rc_callback free;           // Callback for deallocating the struct, do nothing if `NULL`.
+    rc_callback cleanup;        // Callback for dereference sub classes, do nothing if `NULL`.
 } rc_t;
 
 rc_t    rc_init(rc_callback cleanup, rc_callback free);
