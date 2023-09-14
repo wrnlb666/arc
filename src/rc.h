@@ -47,11 +47,9 @@ extern inline void rc_unref(void* rc) {
         if (rc_temp->cleanup != NULL) {
             rc_temp->cleanup(rc);
         }
-        if (rc_temp->free == NULL) {
-            free(rc);
-            return;
+        if (rc_temp->free != NULL) {
+            rc_temp->free(rc);
         }
-        rc_temp->free(rc);
     }
 }
 
